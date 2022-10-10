@@ -1,6 +1,8 @@
 package com.spring.hcloud.main;
 
 import java.io.File;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -8,12 +10,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.scheduling.annotation.Schedules;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.spring.hcloud.main.service.Fileoperationservice;
@@ -29,9 +28,8 @@ public class Main implements CommandLineRunner {
 
 	private final Path root = Paths.get("uploads");
 
-	
+	private static final Logger LOGGER = LogManager.getLogger(Main.class);
 
-	
 	@Autowired
 	Fileoperationservice fileoperationservice;
 
@@ -41,7 +39,7 @@ public class Main implements CommandLineRunner {
 
 	public void run(String... args) throws Exception {
 
-		System.out.println("running apps");
+		LOGGER.info("Invoking INIT");
 		fileoperationservice.init();
 	}
 
@@ -49,22 +47,21 @@ public class Main implements CommandLineRunner {
 	Globalservice sseEmitters;
 
 	// Scan Folder for file and inform client
-	@Scheduled(fixedDelay = 5000000L
-			)
+	@Scheduled(fixedDelay = 5000000L)
 	public void scanandsend() {
 
 		String[] pathnames;
-		System.out.println("Scanning"+new java.util.Date());
+		LOGGER.info("Scanning " + new java.util.Date());
 		pathnames = new File(root.toString()).list();
 
 		for (String file : pathnames) {
 			String username = file.substring(0, file.indexOf("_"));
-			System.out.println("founf files for "+ username);
+			LOGGER.info("found files for " + username);
 			// Print the names of files and directories
 
 			SseEmitter sseEmitter = sseEmitters.get(username);
-			if (sseEmitter != null  ) {
-				System.out.println("founf files for "+ username);
+			if (sseEmitter != null) {
+				LOGGER.info("found files for " + username);
 				fileoperationservice.notifyclientpendingfile(file, sseEmitter, username);
 			}
 		}

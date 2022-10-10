@@ -2,20 +2,15 @@ package com.spring.hcloud.main.controller;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletResponse;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,11 +19,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.spring.hcloud.main.service.Fileoperationservice;
 import com.spring.hcloud.main.service.Globalservice;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 @RestController
 @CrossOrigin(origins = { "http://localhost:3000", "http://10.0.0.146:3000" })
@@ -36,6 +32,8 @@ import com.spring.hcloud.main.service.Globalservice;
 public class ApiController {
 
 //UploadFiles	
+
+	  private static final Logger log = LogManager.getLogger(ApiController.class);
 
 	@Autowired
 	Fileoperationservice fileoperationservice;
@@ -58,7 +56,7 @@ public class ApiController {
 
 		return "<!DOCTYPE html>\n" + "<html>\n" + "   <head>\n" + "      <title>Upload multiple files</title>\n"
 				+ "   </head>\n" + "\n" + "   <body>\n"
-				+ "<form action=\"http://3.88.84.68:8383/uploadfiles\" method=\"POST\" enctype=\"multipart/form-data\">\n"
+				+ "<form action=\"http://localhost:8383/uploadfiles\" method=\"POST\" enctype=\"multipart/form-data\">\n"
 				+ "      \n" + "       Username : <input type=\"text\" id=\"username\" name=\"username\"><br><br>\n"
 				+ "         <input type=\"file\" name=\"file\" multiple><br><br>\n"
 				+ "         After uploading multiple files, click Submit.<br>\n" + "         \n"
@@ -81,7 +79,7 @@ public class ApiController {
 		// sseEmitter.send(username + " Connected at " + new Date().toLocaleString());
 		// sseEmitter.onCompletion(() -> sseEmitters.remove(username));
 		sseEmitter.onTimeout(() -> {
-			System.out.println("Timeout, Removing the SSEEmitter " + username);
+			log.info("Timeout, Removing the SSEEmitter " + username);
 			sseEmitters.removeCache(username);
 		});
 		// System.out.println("SseEmitter Object created with " + username);
@@ -91,11 +89,12 @@ public class ApiController {
 	@PostMapping(path = "/uploadfiles")
 	public String uploadfiles(@RequestParam("file") MultipartFile[] files, @RequestParam("username") String username)
 			throws IOException {
+		
 
 		fileoperationservice.InvokeDao(files, username);
 
 		return Arrays.asList(files).stream().map(file -> {
-
+			log.info("Uploading file for username "+file);
 			return fileoperationservice.save(file, sseEmitters.get(username), username);
 
 		}).collect(Collectors.toList()).toString();
